@@ -9,16 +9,15 @@ from .models import User, Account, Contact, Opportunity
 from .models import Token
 
 # A Blueprint is a way to organize a group of related routes.
+# We call it 'main' here.
 main = Blueprint('main', __name__)
 
 def admin_required(f):
     """Decorator to require admin role for a route."""
     @wraps(f)
+    @login_required  # Make sure login_required is applied before admin check
     def decorated_function(*args, **kwargs):
-        # Explicitly require authentication first, then role check.
-        if not current_user.is_authenticated:
-            return redirect(url_for('main.login'))
-        if current_user.role != 'admin':
+        if not current_user.role == 'admin':
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
@@ -111,9 +110,6 @@ def user_create():
     if request.method == 'POST':
         email = request.form.get('email')
         if User.query.filter_by(email=email).first():
-            # If AJAX/JSON request, return JSON error
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-                return {'success': False, 'error': 'Email already registered'}, 400
             flash('Email already registered', 'error')
             return render_template('users/form.html', title='Create User')
         
@@ -128,17 +124,6 @@ def user_create():
         db.session.add(user)
         db.session.commit()
         
-        # If AJAX, return JSON payload describing the new user so frontend can update
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return {
-                'success': True,
-                'id': user.id,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'role': user.role
-            }
-
         flash('User created successfully', 'success')
         return redirect(url_for('main.users'))
     
@@ -164,17 +149,6 @@ def user_edit(user_id):
         user.role = request.form.get('role', 'user')
         
         db.session.commit()
-        # If AJAX, return JSON so frontend can update inline
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return {
-                'success': True,
-                'id': user.id,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'role': user.role
-            }
-
         flash('User updated successfully', 'success')
         return redirect(url_for('main.users'))
     
@@ -192,25 +166,8 @@ def user_delete(user_id):
     
     db.session.delete(user)
     db.session.commit()
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {'success': True, 'id': user_id}
-
     flash('User deleted successfully', 'success')
     return redirect(url_for('main.users'))
-
-
-@main.route('/users/<int:user_id>/json')
-@admin_required
-def user_json(user_id):
-    """Return JSON details for a user (admin only)."""
-    u = User.query.get_or_404(user_id)
-    return {
-        'id': u.id,
-        'email': u.email,
-        'first_name': u.first_name,
-        'last_name': u.last_name,
-        'role': u.role
-    }
 
 @main.route('/users/<int:user_id>/reset-password', methods=['POST'])
 @admin_required
@@ -258,19 +215,7 @@ def tokens_create():
     token.scopes = scopes
     db.session.add(token)
     db.session.commit()
-    # If this is an AJAX request, return JSON with the token value and metadata
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {
-            'success': True,
-            'token': value,
-            'id': token.id,
-            'token_prefix': token.token_prefix,
-            'created_at': token.created_at.isoformat(),
-            'expires_at': token.expires_at.isoformat() if token.expires_at else None,
-            'user_email': user.email,
-            'scopes': token.scopes
-        }
-
+    
     flash(f'Token created: {value} (copy it now, it will not be shown again)', 'success')
     return redirect(url_for('main.tokens_list'))
 
@@ -280,9 +225,6 @@ def tokens_revoke(token_id):
     """Revoke a token."""
     token = Token.query.get_or_404(token_id)
     token.revoke()
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {'success': True, 'id': token_id}
-
     flash('Token revoked', 'success')
     return redirect(url_for('main.tokens_list'))
 
@@ -460,4 +402,4 @@ def contact_delete(contact_id):
     db.session.delete(contact)
     db.session.commit()
     flash('Contact deleted successfully', 'success')
-    return redirect(url_for('main.contacts'))
+        return redirect(url_for('main.contacts'))

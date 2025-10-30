@@ -4,7 +4,7 @@
 <div class="container mx-auto px-4 py-8">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">User Management</h1>
-        <a href="{{ url_for('main.user_create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+        <a id="open-create-user" href="{{ url_for('main.user_create') }}" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
             Add New User
         </a>
     </div>
@@ -57,7 +57,7 @@
                     </td>
                     <td class="py-3 px-6 text-center">
                         <div class="flex item-center justify-center">
-                            <a href="{{ url_for('main.user_edit', user_id=user.id) }}" class="w-4 mr-4 transform hover:text-blue-500 hover:scale-110">
+                            <a href="{{ url_for('main.user_edit', user_id=user.id) }}" class="user-edit-btn w-4 mr-4 transform hover:text-blue-500 hover:scale-110" data-user-id="{{ user.id }}">
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                                 </svg>

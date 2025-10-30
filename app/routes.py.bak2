@@ -1,4 +1,3 @@
-"""Routes for the CRM application."""
 from datetime import datetime, timedelta
 import secrets
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
@@ -9,13 +8,12 @@ from .models import User, Account, Contact, Opportunity
 from .models import Token
 
 # A Blueprint is a way to organize a group of related routes.
+# We call it 'main' here.
 main = Blueprint('main', __name__)
 
 def admin_required(f):
-    """Decorator to require admin role for a route."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        # Explicitly require authentication first, then role check.
         if not current_user.is_authenticated:
             return redirect(url_for('main.login'))
         if current_user.role != 'admin':
@@ -40,16 +38,12 @@ def login():
         if user and user.check_password(password):
             # Log the user in (this creates their session).
             login_user(user)
-            # Before redirecting, check if they were trying to access a protected page
+            # Check the next parameter for admin routes
             next_page = request.args.get('next')
-            # Make sure the next page is safe (starts with /)
-            if next_page and next_page.startswith('/'):
-                # Check if they were trying to access an admin page without admin rights
-                if '/users' in next_page and user.role != 'admin':
-                    flash('Access denied: Admin privileges required.', 'error')
-                    return redirect(url_for('main.dashboard'))
-                return redirect(next_page)
-            return redirect(url_for('main.dashboard'))
+            if next_page and '/users' in next_page and user.role != 'admin':
+                flash('Access denied: Admin privileges required.', 'error')
+                return redirect(url_for('main.dashboard'))
+            return redirect(next_page or url_for('main.dashboard'))
         else:
             # If login fails, show an error message.
             flash('Invalid email or password. Please try again.', 'danger')
@@ -66,13 +60,6 @@ def logout():
     return redirect(url_for('main.login'))
 
 @main.route('/')
-def index():
-    """Redirect root URL to dashboard if logged in, or login page if not."""
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
-    return redirect(url_for('main.login'))
-
-@main.route('/dashboard')
 @login_required
 def dashboard():
     """Dashboard showing key metrics and recent items."""
@@ -88,7 +75,8 @@ def dashboard():
                          opportunities=opportunities)
 
 @main.route('/users')
-@admin_required  # Only admins can see user list
+@login_required
+@admin_required
 def users():
     """List users with pagination and search (admin only)."""
     page = request.args.get('page', 1, type=int)
@@ -105,15 +93,13 @@ def users():
     return render_template('users/list.html', users=users, pagination=pagination, q=q, title='Users')
 
 @main.route('/users/create', methods=['GET', 'POST'])
+@login_required
 @admin_required
 def user_create():
     """Create a new user."""
     if request.method == 'POST':
         email = request.form.get('email')
         if User.query.filter_by(email=email).first():
-            # If AJAX/JSON request, return JSON error
-            if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-                return {'success': False, 'error': 'Email already registered'}, 400
             flash('Email already registered', 'error')
             return render_template('users/form.html', title='Create User')
         
@@ -128,23 +114,13 @@ def user_create():
         db.session.add(user)
         db.session.commit()
         
-        # If AJAX, return JSON payload describing the new user so frontend can update
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return {
-                'success': True,
-                'id': user.id,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'role': user.role
-            }
-
         flash('User created successfully', 'success')
         return redirect(url_for('main.users'))
     
     return render_template('users/form.html', title='Create User')
 
 @main.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@login_required
 @admin_required
 def user_edit(user_id):
     """Edit an existing user."""
@@ -164,23 +140,13 @@ def user_edit(user_id):
         user.role = request.form.get('role', 'user')
         
         db.session.commit()
-        # If AJAX, return JSON so frontend can update inline
-        if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-            return {
-                'success': True,
-                'id': user.id,
-                'email': user.email,
-                'first_name': user.first_name,
-                'last_name': user.last_name,
-                'role': user.role
-            }
-
         flash('User updated successfully', 'success')
         return redirect(url_for('main.users'))
     
     return render_template('users/form.html', user=user, title='Edit User')
 
 @main.route('/users/<int:user_id>/delete', methods=['POST'])
+@login_required
 @admin_required
 def user_delete(user_id):
     """Delete a user."""
@@ -192,27 +158,11 @@ def user_delete(user_id):
     
     db.session.delete(user)
     db.session.commit()
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {'success': True, 'id': user_id}
-
     flash('User deleted successfully', 'success')
     return redirect(url_for('main.users'))
 
-
-@main.route('/users/<int:user_id>/json')
-@admin_required
-def user_json(user_id):
-    """Return JSON details for a user (admin only)."""
-    u = User.query.get_or_404(user_id)
-    return {
-        'id': u.id,
-        'email': u.email,
-        'first_name': u.first_name,
-        'last_name': u.last_name,
-        'role': u.role
-    }
-
 @main.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@login_required
 @admin_required
 def user_reset_password(user_id):
     """Reset a user's password."""
@@ -226,6 +176,7 @@ def user_reset_password(user_id):
     return redirect(url_for('main.user_edit', user_id=user_id))
 
 @main.route('/tokens')
+@login_required
 @admin_required
 def tokens_list():
     """Admin list of tokens."""
@@ -233,6 +184,7 @@ def tokens_list():
     return render_template('users/tokens.html', tokens=tokens, title='API Tokens')
 
 @main.route('/tokens/create', methods=['POST'])
+@login_required
 @admin_required
 def tokens_create():
     """Create a token for a user (admin action)"""
@@ -258,31 +210,17 @@ def tokens_create():
     token.scopes = scopes
     db.session.add(token)
     db.session.commit()
-    # If this is an AJAX request, return JSON with the token value and metadata
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {
-            'success': True,
-            'token': value,
-            'id': token.id,
-            'token_prefix': token.token_prefix,
-            'created_at': token.created_at.isoformat(),
-            'expires_at': token.expires_at.isoformat() if token.expires_at else None,
-            'user_email': user.email,
-            'scopes': token.scopes
-        }
-
+    
     flash(f'Token created: {value} (copy it now, it will not be shown again)', 'success')
     return redirect(url_for('main.tokens_list'))
 
 @main.route('/tokens/<int:token_id>/revoke', methods=['POST'])
+@login_required
 @admin_required
 def tokens_revoke(token_id):
     """Revoke a token."""
     token = Token.query.get_or_404(token_id)
     token.revoke()
-    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
-        return {'success': True, 'id': token_id}
-
     flash('Token revoked', 'success')
     return redirect(url_for('main.tokens_list'))
 
