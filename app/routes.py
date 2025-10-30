@@ -216,7 +216,19 @@ def tokens_create():
     token.scopes = scopes
     db.session.add(token)
     db.session.commit()
-    
+    # If this is an AJAX request, return JSON with the token value and metadata
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return {
+            'success': True,
+            'token': value,
+            'id': token.id,
+            'token_prefix': token.token_prefix,
+            'created_at': token.created_at.isoformat(),
+            'expires_at': token.expires_at.isoformat() if token.expires_at else None,
+            'user_email': user.email,
+            'scopes': token.scopes
+        }
+
     flash(f'Token created: {value} (copy it now, it will not be shown again)', 'success')
     return redirect(url_for('main.tokens_list'))
 
@@ -226,6 +238,9 @@ def tokens_revoke(token_id):
     """Revoke a token."""
     token = Token.query.get_or_404(token_id)
     token.revoke()
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
+        return {'success': True, 'id': token_id}
+
     flash('Token revoked', 'success')
     return redirect(url_for('main.tokens_list'))
 

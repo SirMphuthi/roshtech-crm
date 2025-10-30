@@ -1,0 +1,72 @@
+{% extends "_layout.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+  <div class="mb-6 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">API Tokens</h1>
+    <a href="{{ url_for('main.users') }}" class="bg-gray-500 text-white px-3 py-2 rounded">Back to Users</a>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="bg-{{ 'green' if category == 'success' else 'red' }}-100 border border-{{ 'green' if category == 'success' else 'red' }}-400 text-{{ 'green' if category == 'success' else 'red' }}-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <span class="block sm:inline">{{ message }}</span>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <div class="bg-white rounded shadow p-4 mb-6">
+    <form id="token-create-form" action="{{ url_for('main.tokens_create') }}" method="post" class="grid grid-cols-3 gap-2 items-end">
+      <div>
+        <label class="block text-sm">User ID</label>
+        <input name="user_id" class="border rounded w-full px-2 py-1" placeholder="User ID (required)" required>
+      </div>
+      <div>
+        <label class="block text-sm">Expires In (seconds)</label>
+        <input name="expires_in" class="border rounded w-full px-2 py-1" placeholder="e.g., 3600">
+      </div>
+      <div>
+        <label class="block text-sm">Scopes</label>
+        <input name="scopes" class="border rounded w-full px-2 py-1" placeholder="comma-separated">
+      </div>
+      <div class="col-span-3 text-right">
+        <button id="token-create-btn" class="bg-blue-600 text-white px-4 py-2 rounded">Create Token</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="bg-white rounded shadow p-4">
+    <table class="min-w-full table-auto">
+      <thead>
+        <tr class="bg-gray-100 text-left">
+          <th class="p-2">ID</th>
+          <th class="p-2">User</th>
+          <th class="p-2">Prefix</th>
+          <th class="p-2">Created</th>
+          <th class="p-2">Expires</th>
+          <th class="p-2">Revoked</th>
+          <th class="p-2">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in tokens %}
+          <tr class="border-t">
+            <td class="p-2">{{ t.id }}</td>
+            <td class="p-2">{{ t.user.email }}</td>
+            <td class="p-2 font-mono">{{ t.token_prefix }}</td>
+            <td class="p-2">{{ t.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+            <td class="p-2">{{ t.expires_at.strftime('%Y-%m-%d %H:%M') if t.expires_at else '-' }}</td>
+            <td class="p-2">{{ 'Yes' if t.revoked else 'No' }}</td>
+            <td class="p-2">
+              <button class="bg-red-500 text-white px-2 py-1 rounded revoke-btn" data-token-id="{{ t.id }}">Revoke</button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+<script src="{{ url_for('static', filename='js/tokens.js') }}"></script>
+{% endblock %}
