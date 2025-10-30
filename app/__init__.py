@@ -9,9 +9,15 @@ migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'main.login'
 
-def create_app(config_class=Config):
+def create_app(test_config=None):
     app = Flask(__name__)
-    app.config.from_object(config_class)
+    
+    # Load the default configuration
+    app.config.from_object(Config)
+    
+    # Override with test config if provided
+    if test_config is not None:
+        app.config.update(test_config)
 
     db.init_app(app)
     migrate.init_app(app, db)

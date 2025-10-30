@@ -32,7 +32,8 @@ def test_token_auth_for_opportunities(client, app):
         db.session.commit()
         # create token
         token_value = secrets.token_urlsafe(24)
-        t = Token(token=token_value, user_id=admin.id)
+        t = Token(user_id=admin.id)
+        t.set_token(token_value)
         db.session.add(t)
         db.session.commit()
 

@@ -5,6 +5,8 @@ from . import db
 from .models import Token, User
 from flask import g
 import secrets
+from datetime import datetime, timedelta
+from sqlalchemy import and_
 
 def token_auth_required(f):
     """Decorator to require API token in Authorization header or ?token= param.
@@ -21,8 +23,18 @@ def token_auth_required(f):
         if not token_value:
             abort(401)
 
-        token = Token.query.filter_by(token=token_value, revoked=False).first()
+        # Use prefix to narrow down candidates, then verify hash
+        prefix = token_value[:8]
+        candidates = Token.query.filter_by(token_prefix=prefix, revoked=False).all()
+        token = None
+        for t in candidates:
+            if t.check_token(token_value):
+                token = t
+                break
         if not token:
+            abort(401)
+        # Check expiry
+        if token.expires_at and datetime.utcnow() > token.expires_at:
             abort(401)
 
         g.current_api_user = token.user
@@ -66,10 +78,22 @@ def create_token():
     """
     # We'll create a 48-byte URL-safe token
     value = secrets.token_urlsafe(48)
-    token = Token(token=value, user_id=current_user.id)
+    token = Token(user_id=current_user.id)
+    token.set_token(value)
+    # optional: accept expires_in (seconds) and scopes from form/json
+    expires_in = request.json.get('expires_in') if request.is_json else request.form.get('expires_in')
+    if expires_in:
+        try:
+            token.expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
+        except Exception:
+            pass
+    scopes = request.json.get('scopes') if request.is_json else request.form.get('scopes')
+    if scopes:
+        token.scopes = scopes
     db.session.add(token)
     db.session.commit()
-    return jsonify({'token': value})
+    # return the plaintext token once to the caller
+    return jsonify({'token': value, 'id': token.id})
 
 
 @api.route('/token/<int:token_id>/revoke', methods=['POST'])

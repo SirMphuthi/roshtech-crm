@@ -18,7 +18,7 @@ The RoshTech CRM is a comprehensive Customer Relationship Management platform de
 - 🔄 Real-time Updates
 
 ### Business Divisions Supported
-- 🚀 RoshTech Technologies (CPS #BONAZONKE)
+- 🚀 RoshTech Technologies
 - 🚛 RoshTech Logistics
 - 🏢 RoshTech Properties
 
@@ -117,6 +117,34 @@ roshtech-crm/
 2. Commit your changes
 3. Push to the branch
 4. Create a Pull Request
+
+## ✅ Running tests
+
+Quick commands to run the test-suite locally.
+
+PowerShell (Windows):
+```powershell
+# ensure the repo root is on PYTHONPATH for tests
+$env:PYTHONPATH = "."
+pytest -q
+```
+
+macOS / Linux:
+```bash
+export PYTHONPATH=. ; pytest -q
+```
+
+To run a single test file or test case, use the pytest -k or pass the path to a file:
+```bash
+pytest tests/test_users.py::test_create_user -q
+```
+
+## 🧰 Developer notes
+
+- The app uses Flask + Flask-Login for auth. Tests create an `admin@test.com` user during setup.
+- If you need to switch the test client between users in tests, the test auth helper now logs out before logging in to ensure a clean session.
+- Database migrations are managed with Alembic/Flask-Migrate. Generate migrations with `flask db migrate` and apply with `flask db upgrade`.
+- There are a handful of deprecation warnings from SQLAlchemy about `Query.get()` — consider migrating to `Session.get()` in a follow-up.
 
 ## 📝 License
 

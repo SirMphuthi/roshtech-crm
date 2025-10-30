@@ -1,32 +1,233 @@
-from datetime import datetime
+"""Routes for the CRM application."""
+from datetime import datetime, timedelta
+import secrets
 from flask import Blueprint, render_template, redirect, url_for, flash, request, abort
 from flask_login import login_user, logout_user, login_required, current_user
 from functools import wraps
 from . import db
 from .models import User, Account, Contact, Opportunity
+from .models import Token
 
 # A Blueprint is a way to organize a group of related routes.
-# We call it 'main' here.
 main = Blueprint('main', __name__)
 
 def admin_required(f):
+    """Decorator to require admin role for a route."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if not current_user.is_authenticated or current_user.role != 'admin':
+        # Explicitly require authentication first, then role check.
+        if not current_user.is_authenticated:
+            return redirect(url_for('main.login'))
+        if current_user.role != 'admin':
             abort(403)
         return f(*args, **kwargs)
     return decorated_function
 
-def role_required(*roles):
-    """Decorator to require one of the provided roles on a route."""
-    def decorator(f):
-        @wraps(f)
-        def decorated_function(*args, **kwargs):
-            if not current_user.is_authenticated or current_user.role not in roles:
-                abort(403)
-            return f(*args, **kwargs)
-        return decorated_function
-    return decorator
+@main.route('/login', methods=['GET', 'POST'])
+def login():
+    """Handles the login page and form submission."""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+
+    if request.method == 'POST':
+        email = request.form.get('email')
+        password = request.form.get('password')
+        
+        # Look up the user in the database by their email.
+        user = User.query.filter_by(email=email).first()
+        
+        # Check if the user exists and if the password is correct.
+        if user and user.check_password(password):
+            # Log the user in (this creates their session).
+            login_user(user)
+            # Before redirecting, check if they were trying to access a protected page
+            next_page = request.args.get('next')
+            # Make sure the next page is safe (starts with /)
+            if next_page and next_page.startswith('/'):
+                # Check if they were trying to access an admin page without admin rights
+                if '/users' in next_page and user.role != 'admin':
+                    flash('Access denied: Admin privileges required.', 'error')
+                    return redirect(url_for('main.dashboard'))
+                return redirect(next_page)
+            return redirect(url_for('main.dashboard'))
+        else:
+            # If login fails, show an error message.
+            flash('Invalid email or password. Please try again.', 'danger')
+
+    # If it's a GET request, just show the login page.
+    return render_template('login.html', title='Login')
+
+@main.route('/logout')
+@login_required
+def logout():
+    """Logs the user out."""
+    logout_user()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('main.login'))
+
+@main.route('/')
+def index():
+    """Redirect root URL to dashboard if logged in, or login page if not."""
+    if current_user.is_authenticated:
+        return redirect(url_for('main.dashboard'))
+    return redirect(url_for('main.login'))
+
+@main.route('/dashboard')
+@login_required
+def dashboard():
+    """Dashboard showing key metrics and recent items."""
+    # Get recent accounts and open opportunities
+    accounts = Account.query.order_by(Account.created_at.desc()).limit(5).all()
+    opportunities = Opportunity.query.filter(
+        Opportunity.stage.notin_(['Closed-Won', 'Closed-Lost'])
+    ).order_by(Opportunity.close_date.asc()).limit(5).all()
+    
+    return render_template('dashboard.html', 
+                         title='Dashboard',
+                         accounts=accounts, 
+                         opportunities=opportunities)
+
+@main.route('/users')
+@admin_required  # Only admins can see user list
+def users():
+    """List users with pagination and search (admin only)."""
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    q = request.args.get('q', '', type=str)
+
+    base = User.query
+    if q:
+        pattern = f"%{q}%"
+        base = base.filter(User.email.ilike(pattern) | User.first_name.ilike(pattern) | User.last_name.ilike(pattern))
+
+    pagination = base.order_by(User.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
+    users = pagination.items
+    return render_template('users/list.html', users=users, pagination=pagination, q=q, title='Users')
+
+@main.route('/users/create', methods=['GET', 'POST'])
+@admin_required
+def user_create():
+    """Create a new user."""
+    if request.method == 'POST':
+        email = request.form.get('email')
+        if User.query.filter_by(email=email).first():
+            flash('Email already registered', 'error')
+            return render_template('users/form.html', title='Create User')
+        
+        user = User(
+            email=email,
+            first_name=request.form.get('first_name'),
+            last_name=request.form.get('last_name'),
+            role=request.form.get('role', 'user')
+        )
+        user.set_password(request.form.get('password'))
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        flash('User created successfully', 'success')
+        return redirect(url_for('main.users'))
+    
+    return render_template('users/form.html', title='Create User')
+
+@main.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
+@admin_required
+def user_edit(user_id):
+    """Edit an existing user."""
+    user = User.query.get_or_404(user_id)
+    
+    if request.method == 'POST':
+        email = request.form.get('email')
+        existing_user = User.query.filter_by(email=email).first()
+        
+        if existing_user and existing_user.id != user_id:
+            flash('Email already registered', 'error')
+            return render_template('users/form.html', user=user, title='Edit User')
+        
+        user.email = email
+        user.first_name = request.form.get('first_name')
+        user.last_name = request.form.get('last_name')
+        user.role = request.form.get('role', 'user')
+        
+        db.session.commit()
+        flash('User updated successfully', 'success')
+        return redirect(url_for('main.users'))
+    
+    return render_template('users/form.html', user=user, title='Edit User')
+
+@main.route('/users/<int:user_id>/delete', methods=['POST'])
+@admin_required
+def user_delete(user_id):
+    """Delete a user."""
+    user = User.query.get_or_404(user_id)
+    
+    if user.id == current_user.id:
+        flash('You cannot delete your own account', 'error')
+        return redirect(url_for('main.users'))
+    
+    db.session.delete(user)
+    db.session.commit()
+    flash('User deleted successfully', 'success')
+    return redirect(url_for('main.users'))
+
+@main.route('/users/<int:user_id>/reset-password', methods=['POST'])
+@admin_required
+def user_reset_password(user_id):
+    """Reset a user's password."""
+    user = User.query.get_or_404(user_id)
+    new_password = request.form.get('new_password')
+    
+    user.set_password(new_password)
+    db.session.commit()
+    
+    flash('Password reset successfully', 'success')
+    return redirect(url_for('main.user_edit', user_id=user_id))
+
+@main.route('/tokens')
+@admin_required
+def tokens_list():
+    """Admin list of tokens."""
+    tokens = Token.query.order_by(Token.created_at.desc()).all()
+    return render_template('users/tokens.html', tokens=tokens, title='API Tokens')
+
+@main.route('/tokens/create', methods=['POST'])
+@admin_required
+def tokens_create():
+    """Create a token for a user (admin action)"""
+    user_id = request.form.get('user_id')
+    expires_in = request.form.get('expires_in')
+    scopes = request.form.get('scopes')
+    
+    if not user_id:
+        flash('User is required', 'error')
+        return redirect(url_for('main.tokens_list'))
+        
+    user = User.query.get_or_404(int(user_id))
+    value = secrets.token_urlsafe(48)
+    token = Token(user_id=user.id)
+    token.set_token(value)
+    
+    if expires_in:
+        try:
+            token.expires_at = datetime.utcnow() + timedelta(seconds=int(expires_in))
+        except Exception:
+            pass
+            
+    token.scopes = scopes
+    db.session.add(token)
+    db.session.commit()
+    
+    flash(f'Token created: {value} (copy it now, it will not be shown again)', 'success')
+    return redirect(url_for('main.tokens_list'))
+
+@main.route('/tokens/<int:token_id>/revoke', methods=['POST'])
+@admin_required
+def tokens_revoke(token_id):
+    """Revoke a token."""
+    token = Token.query.get_or_404(token_id)
+    token.revoke()
+    flash('Token revoked', 'success')
+    return redirect(url_for('main.tokens_list'))
 
 @main.route('/opportunities')
 @login_required
@@ -83,6 +284,11 @@ def opportunity_edit(opportunity_id):
     """Edit an existing opportunity."""
     opportunity = Opportunity.query.get_or_404(opportunity_id)
     
+    # Only allow the owner or an admin to edit
+    if opportunity.owner_id != current_user.id and current_user.role != 'admin':
+        flash('You do not have permission to edit this opportunity', 'error')
+        return redirect(url_for('main.opportunities'))
+    
     if request.method == 'POST':
         account = Account.query.get(request.form.get('account_id'))
         if not account:
@@ -117,6 +323,7 @@ def opportunity_delete(opportunity_id):
     db.session.commit()
     flash('Opportunity deleted successfully', 'success')
     return redirect(url_for('main.opportunities'))
+
 @main.route('/contacts')
 @login_required
 def contacts():
@@ -197,158 +404,3 @@ def contact_delete(contact_id):
     db.session.commit()
     flash('Contact deleted successfully', 'success')
     return redirect(url_for('main.contacts'))
-
-
-@main.route('/login', methods=['GET', 'POST'])
-def login():
-    """Handles the login page and form submission."""
-    
-    # If the user is already logged in, send them to the dashboard.
-    if current_user.is_authenticated:
-        return redirect(url_for('main.index'))
-
-    if request.method == 'POST':
-        email = request.form.get('email')
-        password = request.form.get('password')
-        
-        # Look up the user in the database by their email.
-        user = User.query.filter_by(email=email).first()
-        
-        # Check if the user exists and if the password is correct.
-        if user and user.check_password(password):
-            # Log the user in (this creates their session).
-            login_user(user)
-            # Send them to the dashboard.
-            return redirect(url_for('main.index'))
-        else:
-            # If login fails, show an error message.
-            flash('Invalid email or password. Please try again.', 'danger')
-
-    # If it's a GET request, just show the login page.
-    return render_template('login.html', title='Login')
-
-@main.route('/logout')
-@login_required  # This route can only be accessed by a logged-in user.
-def logout():
-    """Logs the user out."""
-    logout_user()
-    return redirect(url_for('main.login'))
-
-@main.route('/')
-@main.route('/dashboard')
-@login_required  # This route is protected.
-def index():
-    """Displays the main CRM dashboard."""
-    
-    # --- Example Data for the Dashboard ---
-    # In the future, we will fetch this data based on the current_user.
-    # For now, we fetch all accounts and opportunities to show.
-    
-    accounts = Account.query.order_by(Account.created_at.desc()).limit(5).all()
-    opportunities = Opportunity.query.filter(Opportunity.stage.notin_(['Closed-Won', 'Closed-Lost'])).order_by(Opportunity.close_date.asc()).limit(5).all()
-
-    return render_template('dashboard.html', 
-                           title='Dashboard', 
-                           accounts=accounts, 
-                           opportunities=opportunities)
-
-@main.route('/users')
-@login_required
-@admin_required
-def users():
-    """List users with pagination and search (admin only)."""
-    page = request.args.get('page', 1, type=int)
-    per_page = request.args.get('per_page', 10, type=int)
-    q = request.args.get('q', '', type=str)
-
-    base = User.query
-    if q:
-        pattern = f"%{q}%"
-        base = base.filter(User.email.ilike(pattern) | User.first_name.ilike(pattern) | User.last_name.ilike(pattern))
-
-    pagination = base.order_by(User.id.desc()).paginate(page=page, per_page=per_page, error_out=False)
-    users = pagination.items
-    return render_template('users/list.html', users=users, pagination=pagination, q=q, title='User Management')
-
-@main.route('/users/create', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def user_create():
-    """Create a new user."""
-    if request.method == 'POST':
-        email = request.form.get('email')
-        if User.query.filter_by(email=email).first():
-            flash('Email already registered', 'error')
-            return render_template('users/form.html', title='Create User')
-        
-        user = User(
-            email=email,
-            first_name=request.form.get('first_name'),
-            last_name=request.form.get('last_name'),
-            role=request.form.get('role', 'user')
-        )
-        user.set_password(request.form.get('password'))
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        flash('User created successfully', 'success')
-        return redirect(url_for('main.users'))
-    
-    return render_template('users/form.html', title='Create User')
-
-@main.route('/users/<int:user_id>/edit', methods=['GET', 'POST'])
-@login_required
-@admin_required
-def user_edit(user_id):
-    """Edit an existing user."""
-    user = User.query.get_or_404(user_id)
-    
-    if request.method == 'POST':
-        email = request.form.get('email')
-        existing_user = User.query.filter_by(email=email).first()
-        
-        if existing_user and existing_user.id != user_id:
-            flash('Email already registered', 'error')
-            return render_template('users/form.html', user=user, title='Edit User')
-        
-        user.email = email
-        user.first_name = request.form.get('first_name')
-        user.last_name = request.form.get('last_name')
-        user.role = request.form.get('role', 'user')
-        
-        db.session.commit()
-        flash('User updated successfully', 'success')
-        return redirect(url_for('main.users'))
-    
-    return render_template('users/form.html', user=user, title='Edit User')
-
-@main.route('/users/<int:user_id>/delete', methods=['POST'])
-@login_required
-@admin_required
-def user_delete(user_id):
-    """Delete a user."""
-    user = User.query.get_or_404(user_id)
-    
-    if user.id == current_user.id:
-        flash('You cannot delete your own account', 'error')
-        return redirect(url_for('main.users'))
-    
-    db.session.delete(user)
-    db.session.commit()
-    flash('User deleted successfully', 'success')
-    return redirect(url_for('main.users'))
-
-@main.route('/users/<int:user_id>/reset-password', methods=['POST'])
-@login_required
-@admin_required
-def user_reset_password(user_id):
-    """Reset a user's password."""
-    user = User.query.get_or_404(user_id)
-    new_password = request.form.get('new_password')
-    
-    user.set_password(new_password)
-    db.session.commit()
-    
-    flash('Password reset successfully', 'success')
-    return redirect(url_for('main.user_edit', user_id=user_id))

@@ -2,6 +2,7 @@ from . import db, login_manager
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # This is the callback function that Flask-Login will use to load a user
 # from the session. It must be defined to use Flask-Login.
@@ -42,19 +43,35 @@ class Token(db.Model):
     Tokens are simple bearer tokens tied to a User and can be revoked.
     """
     id = db.Column(db.Integer, primary_key=True)
-    token = db.Column(db.String(128), unique=True, index=True, nullable=False)
+    # We store a hashed token and a short prefix (first 8 chars) for quick lookup.
+    token_hash = db.Column(db.String(256), nullable=False)
+    token_prefix = db.Column(db.String(16), index=True, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    expires_at = db.Column(db.DateTime, nullable=True)
+    scopes = db.Column(db.String(255), nullable=True)
     revoked = db.Column(db.Boolean, default=False)
 
     user = db.relationship('User', back_populates='tokens')
+
+    def set_token(self, plain_token: str):
+        self.token_hash = generate_password_hash(plain_token)
+        # store short prefix for indexed lookup (helps avoid scanning all tokens)
+        self.token_prefix = plain_token[:8]
+
+    def check_token(self, plain_token: str) -> bool:
+        if self.revoked:
+            return False
+        if self.expires_at and datetime.utcnow() > self.expires_at:
+            return False
+        return check_password_hash(self.token_hash, plain_token)
 
     def revoke(self):
         self.revoked = True
         db.session.commit()
 
     def __repr__(self):
-        return f'<Token {self.token[:8]}... for user_id={self.user_id}>'
+        return f'<Token {self.token_prefix}... for user_id={self.user_id}>'
 
 class Account(db.Model):
     """
