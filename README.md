@@ -146,7 +146,24 @@ pytest tests/test_users.py::test_create_user -q
 - Database migrations are managed with Alembic/Flask-Migrate. Generate migrations with `flask db migrate` and apply with `flask db upgrade`.
 - There are a handful of deprecation warnings from SQLAlchemy about `Query.get()` — consider migrating to `Session.get()` in a follow-up.
 
-## 📝 License
+## � CSRF protection (recommended)
+
+This app supports optional CSRF protection via Flask-WTF. CSRF will be enabled at runtime if `flask-wtf` is installed and configured.
+
+To enable CSRF in your environment:
+
+PowerShell:
+```powershell
+pip install Flask-WTF
+$env:FLASK_APP = "run.py"
+flask run
+```
+
+If CSRF is enabled, the layout template will include a `meta[name="csrf-token"]` tag and the frontend JS will send this token in the `X-CSRFToken` header for AJAX POST requests.
+
+Tests run with CSRF disabled by default via test config (see `tests/conftest.py`).
+
+## �📝 License
 
 © 2025 RoshTech Industries. All Rights Reserved.
 

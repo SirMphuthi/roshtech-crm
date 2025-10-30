@@ -10,11 +10,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!confirm('Are you sure you want to delete this user?')) return
       btn.disabled = true
       try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+        const headers = {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+        if (csrf) headers['X-CSRFToken'] = csrf
+
         const resp = await fetch(`/users/${userId}/delete`, {
           method: 'POST',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-          }
+          headers
         })
         if (!resp.ok) throw new Error('Network error')
         const data = await resp.json().catch(() => null)

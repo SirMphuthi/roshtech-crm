@@ -14,11 +14,16 @@ document.addEventListener('DOMContentLoaded', function () {
       const formData = new FormData(form)
 
       try {
+        // include CSRF header if available
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+        const headers = {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+        if (csrf) headers['X-CSRFToken'] = csrf
+
         const resp = await fetch(url, {
           method: 'POST',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-          },
+          headers,
           body: formData
         })
 
@@ -83,11 +88,15 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!confirm('Revoke token?')) return
       el.disabled = true
       try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+        const headers = {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+        if (csrf) headers['X-CSRFToken'] = csrf
+
         const resp = await fetch(`/tokens/${id}/revoke`, {
           method: 'POST',
-          headers: {
-            'X-Requested-With': 'XMLHttpRequest'
-          }
+          headers
         })
         if (!resp.ok) throw new Error('Network response not ok')
         const data = await resp.json()

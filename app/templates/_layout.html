@@ -11,6 +11,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <!-- Your custom stylesheet -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {%- if csrf_token is defined -%}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    {%- endif -%}
 </head>
 <body class="bg-gray-100 text-gray-900">
     <div class="flex min-h-screen">

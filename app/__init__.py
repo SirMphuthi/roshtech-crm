@@ -4,6 +4,11 @@ from flask_migrate import Migrate
 from flask_login import LoginManager
 from .config import Config
 
+# Optional CSRF support (Flask-WTF). We import lazily so tests/dev without the
+# dependency continue to run. If Flask-WTF is installed, CSRFProtect will be
+# initialized and a `csrf_token` template global (generate_csrf) will be exposed.
+csrf = None
+
 db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
@@ -22,6 +27,18 @@ def create_app(test_config=None):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+
+    # Try to enable CSRFProtect if Flask-WTF is available.
+    try:
+        from flask_wtf import CSRFProtect
+        from flask_wtf.csrf import generate_csrf
+
+        csrf = CSRFProtect()
+        csrf.init_app(app)
+        # expose generate_csrf as csrf_token() in templates
+        app.jinja_env.globals['csrf_token'] = generate_csrf
+    except Exception:
+        csrf = None
 
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)

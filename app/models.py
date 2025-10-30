@@ -8,7 +8,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 # from the session. It must be defined to use Flask-Login.
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    # Use session.get to avoid SQLAlchemy Query.get() deprecation warnings
+    try:
+        return db.session.get(User, int(user_id))
+    except Exception:
+        # fallback
+        return User.query.get(int(user_id))
 
 class User(UserMixin, db.Model):
     """
