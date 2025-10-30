@@ -25,6 +25,7 @@ class User(UserMixin, db.Model):
     # This user (e.g., a sales rep) might own several accounts
     accounts = db.relationship('Account', back_populates='owner', lazy=True)
     opportunities = db.relationship('Opportunity', back_populates='owner', lazy=True)
+    tokens = db.relationship('Token', back_populates='user', lazy='dynamic', cascade="all, delete-orphan")
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -34,6 +35,26 @@ class User(UserMixin, db.Model):
 
     def __repr__(self):
         return f'<User {self.email}>'
+
+
+class Token(db.Model):
+    """API token for programmatic access.
+    Tokens are simple bearer tokens tied to a User and can be revoked.
+    """
+    id = db.Column(db.Integer, primary_key=True)
+    token = db.Column(db.String(128), unique=True, index=True, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    revoked = db.Column(db.Boolean, default=False)
+
+    user = db.relationship('User', back_populates='tokens')
+
+    def revoke(self):
+        self.revoked = True
+        db.session.commit()
+
+    def __repr__(self):
+        return f'<Token {self.token[:8]}... for user_id={self.user_id}>'
 
 class Account(db.Model):
     """

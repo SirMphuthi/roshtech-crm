@@ -13,6 +13,11 @@
         <form method="get" class="flex space-x-2">
             <input type="text" name="q" value="{{ q if q is defined else '' }}" placeholder="Search opportunities or company..." class="shadow border rounded w-full py-2 px-3">
             <button class="bg-gray-500 text-white px-4 rounded">Search</button>
+            <select name="per_page" class="ml-2 border rounded px-2">
+                {% for opt in [5,10,20,50] %}
+                    <option value="{{ opt }}" {% if pagination and pagination.per_page == opt %}selected{% endif %}>{{ opt }}/page</option>
+                {% endfor %}
+            </select>
         </form>
     </div>
 
@@ -99,6 +104,9 @@
                 {% if pagination.has_prev %}
                     <a href="?page={{ pagination.prev_num }}&q={{ q }}" class="px-3 py-1 bg-gray-200 rounded">&laquo; Previous</a>
                 {% endif %}
+            </div>
+            <div class="text-sm text-gray-600">
+                Page {{ pagination.page }} of {{ pagination.pages }} &middot; {{ pagination.total }} opportunities
             </div>
             <div>
                 {% if pagination.has_next %}

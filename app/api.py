@@ -1,7 +1,34 @@
 from flask import Blueprint, jsonify, request, abort
-from flask_login import current_user
+from flask_login import current_user, login_required
 from .models import Account, Contact, Opportunity
 from . import db
+from .models import Token, User
+from flask import g
+import secrets
+
+def token_auth_required(f):
+    """Decorator to require API token in Authorization header or ?token= param.
+    Sets `g.current_api_user` when valid.
+    """
+    def wrapper(*args, **kwargs):
+        auth = request.headers.get('Authorization', None)
+        token_value = None
+        if auth and auth.lower().startswith('bearer '):
+            token_value = auth.split(None, 1)[1].strip()
+        if not token_value:
+            token_value = request.args.get('token')
+
+        if not token_value:
+            abort(401)
+
+        token = Token.query.filter_by(token=token_value, revoked=False).first()
+        if not token:
+            abort(401)
+
+        g.current_api_user = token.user
+        return f(*args, **kwargs)
+    wrapper.__name__ = f.__name__
+    return wrapper
 
 api = Blueprint('api', __name__, url_prefix='/api')
 
@@ -28,6 +55,31 @@ def list_accounts():
         'website': a.website
     } for a in items]
     return jsonify({'items': data, 'page': pagination.page, 'total': pagination.total})
+
+
+@api.route('/token', methods=['POST'])
+@login_required
+def create_token():
+    """Create a new token for the currently logged-in user.
+    This endpoint expects the user to be logged in via session (or run from the web UI).
+    If you want purely API token creation, it's better to add an OAuth flow or admin-only token creation.
+    """
+    # We'll create a 48-byte URL-safe token
+    value = secrets.token_urlsafe(48)
+    token = Token(token=value, user_id=current_user.id)
+    db.session.add(token)
+    db.session.commit()
+    return jsonify({'token': value})
+
+
+@api.route('/token/<int:token_id>/revoke', methods=['POST'])
+@login_required
+def revoke_token(token_id):
+    token = Token.query.get_or_404(token_id)
+    if token.user_id != current_user.id and current_user.role != 'admin':
+        abort(403)
+    token.revoke()
+    return jsonify({'revoked': True})
 
 @api.route('/accounts/<int:account_id>', methods=['GET'])
 def get_account(account_id):
