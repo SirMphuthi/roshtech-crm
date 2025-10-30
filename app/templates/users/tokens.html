@@ -68,5 +68,20 @@
     </table>
   </div>
 </div>
-<script src="{{ url_for('static', filename='js/tokens.js') }}"></script>
+  <!-- Token modal -->
+  <div id="token-modal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center">
+    <div class="bg-white rounded-lg p-6 max-w-lg w-full">
+      <h2 class="text-lg font-semibold mb-2">Token created</h2>
+      <p class="text-sm text-gray-600 mb-4">Copy this token now — it will not be shown again.</p>
+      <div class="flex items-center space-x-2 mb-4">
+        <code id="token-value" class="font-mono bg-gray-100 px-3 py-2 rounded flex-1"></code>
+        <button id="token-copy-btn" class="bg-blue-600 text-white px-3 py-2 rounded">Copy</button>
+      </div>
+      <div class="text-right">
+        <button id="token-close-btn" class="bg-gray-300 px-3 py-2 rounded">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/tokens.js') }}"></script>
 {% endblock %}

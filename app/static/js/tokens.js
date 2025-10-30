@@ -24,9 +24,26 @@ document.addEventListener('DOMContentLoaded', function () {
 
         if (!resp.ok) throw new Error('Network response not ok')
         const data = await resp.json()
-        if (data && data.success) {
-          // show token value and add to table
-          alert('Token created: ' + data.token + '\nCopy it now — it will not be shown again.')
+          if (data && data.success) {
+          // show token value in modal and add to table
+          const modal = document.getElementById('token-modal')
+          const tokenValueEl = document.getElementById('token-value')
+          const copyBtn = document.getElementById('token-copy-btn')
+          const closeBtn = document.getElementById('token-close-btn')
+          if (modal && tokenValueEl) {
+            tokenValueEl.textContent = data.token
+            modal.classList.remove('hidden')
+            modal.classList.add('flex')
+            // copy handler
+            copyBtn && copyBtn.addEventListener('click', function () {
+              navigator.clipboard && navigator.clipboard.writeText(data.token)
+              copyBtn.textContent = 'Copied'
+            })
+            closeBtn && closeBtn.addEventListener('click', function () {
+              modal.classList.add('hidden')
+              modal.classList.remove('flex')
+            })
+          }
           // prepend new row to table
           const tbody = document.querySelector('table tbody')
           if (tbody) {
