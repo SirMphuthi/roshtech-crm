@@ -20,6 +20,10 @@ def create_app(config_class=Config):
     from .routes import main as main_blueprint
     app.register_blueprint(main_blueprint)
 
+    # Register API blueprint
+    from .api import api as api_blueprint
+    app.register_blueprint(api_blueprint)
+
     from . import models
 
     return app
