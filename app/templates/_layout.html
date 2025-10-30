@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- The title will be set by each page that extends this template -->
+    <title>{{ title }} - RoshTech CRM</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- Your custom stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="bg-gray-100 text-gray-900">
+    <div class="flex min-h-screen">
+        <!-- Sidebar (only shown if user is logged in) -->
+        {% if current_user.is_authenticated %}
+        <nav class="w-64 bg-gray-800 text-white p-6 flex flex-col">
+            <div class="flex items-center space-x-3 mb-10">
+                <i class="fas fa-shield-halved text-3xl text-blue-500"></i>
+                <span class="text-xl font-bold">RoshTech CRM</span>
+            </div>
+
+            <ul class="space-y-3">
+                <li>
+                    <a href="{{ url_for('main.index') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-tachometer-alt w-6 text-center"></i>
+                        <span>Dashboard</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-building w-6 text-center"></i>
+                        <span>Accounts</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-users w-6 text-center"></i>
+                        <span>Contacts</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
+                        <i class="fas fa-bullseye w-6 text-center"></i>
+                        <span>Opportunities</span>
+                    </a>
+                </li>
+            </ul>
+
+            <div class="mt-auto">
+                <div class="border-t border-gray-700 pt-4">
+                    <span class="block text-sm text-gray-400">Logged in as:</span>
+                    <span class="font-medium">{{ current_user.first_name }} {{ current_user.last_name }}</span>
+                    <a href="{{ url_for('main.logout') }}" class="flex items-center space-x-3 p-2 mt-2 rounded-md hover:bg-red-600">
+                        <i class="fas fa-sign-out-alt w-6 text-center"></i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </nav>
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1">
+            <!-- This is where the content from other pages will be injected -->
+            {% block content %}{% endblock %}
+        </main>
+    </div>
+</body>
+</html>

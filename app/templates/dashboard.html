@@ -1,0 +1,62 @@
+{% extends "_layout.html" %}
+
+{% block content %}
+<div class="p-10">
+    <h1 class="text-4xl font-bold text-gray-800 mb-2">Welcome, {{ current_user.first_name }}!</h1>
+    <p class="text-lg text-gray-600 mb-8">Here's a high-level overview of your business activities.</p>
+
+    <!-- Main Dashboard Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+        <!-- Card: Recent Accounts -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Recent Accounts</h3>
+            <div class="space-y-3">
+                {% if accounts %}
+                    {% for account in accounts %}
+                        <div class="p-3 bg-gray-50 rounded-md border border-gray-200">
+                            <h4 class="font-medium text-blue-600">{{ account.name }}</h4>
+                            <p class="text-sm text-gray-500">{{ account.industry }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500">No accounts found.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card: Open Opportunities -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Open Opportunities</h3>
+            <div class="space-y-3">
+                {% if opportunities %}
+                    {% for opp in opportunities %}
+                        <div class="p-3 bg-gray-50 rounded-md border border-gray-200">
+                            <h4 class="font-medium text-green-600">{{ opp.name }}</h4>
+                            <p class="text-sm text-gray-500">{{ opp.account.name }} | Stage: {{ opp.stage }}</p>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-gray-500">No open opportunities.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Card: Key Metrics -->
+        <div class="bg-white p-6 rounded-lg shadow-md">
+            <h3 class="text-xl font-semibold mb-4">Key Metrics</h3>
+            <div class="space-y-4">
+                <div class="flex items-center justify-between p-3 bg-blue-50 rounded-md">
+                    <span class="text-blue-800 font-medium">Total Accounts</span>
+                    <span class="text-2xl font-bold text-blue-900">{{ accounts|length }}</span>
+                </div>
+                <div class="flex items-center justify-between p-3 bg-green-50 rounded-md">
+                    <span class="text-green-800 font-medium">Open Opportunities</span>
+                    <span class="text-2xl font-bold text-green-900">{{ opportunities|length }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
