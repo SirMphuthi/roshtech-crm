@@ -85,7 +85,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const el = ev.target
     if (el && el.classList && el.classList.contains('revoke-btn')) {
       const id = el.getAttribute('data-token-id')
-      if (!confirm('Revoke token?')) return
+      const confirmed = window.uiConfirm ? await window.uiConfirm('Please confirm', 'Revoke token?') : confirm('Revoke token?')
+      if (!confirmed) return
       el.disabled = true
       try {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content

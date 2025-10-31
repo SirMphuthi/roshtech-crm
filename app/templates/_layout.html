@@ -33,7 +33,7 @@
                     </a>
                 </li>
                 <li>
-                    <a href="#" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
+                    <a href="{{ url_for('main.accounts') }}" class="flex items-center space-x-3 p-2 rounded-md hover:bg-gray-700">
                         <i class="fas fa-building w-6 text-center"></i>
                         <span>Accounts</span>
                     </a>
@@ -74,10 +74,56 @@
         {% endif %}
 
         <!-- Main Content Area -->
-        <main class="flex-1">
+        <main class="flex-1 min-h-screen flex flex-col">
+            <!-- Top header -->
+            <header class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <button id="sidebarToggle" class="md:hidden text-gray-600 p-2 rounded-md hover:bg-gray-100">
+                            <i class="fas fa-bars"></i>
+                        </button>
+                        <a href="{{ url_for('main.dashboard') }}" class="flex items-center space-x-3">
+                            <img src="{{ url_for('static', filename='img/logo.svg') }}" alt="RoshTech" class="h-8" onerror="this.style.display='none'">
+                            <span class="font-semibold text-lg text-gray-800">RoshTech CRM</span>
+                        </a>
+                    <form action="{{ url_for('main.dashboard') }}" method="get" class="hidden sm:flex items-center ml-6">
+                        <input type="search" name="q" placeholder="Search accounts, contacts..." class="px-3 py-2 border rounded-lg w-72 focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+                    </form>
+                </div>
+
+                <div class="flex items-center space-x-4">
+                    <a href="{{ url_for('main.forgot_password') }}" class="text-sm text-gray-600 hover:text-gray-800">Forgot password</a>
+                    {% if current_user.is_authenticated %}
+                    <div class="flex items-center space-x-3">
+                        <div class="w-9 h-9 bg-blue-100 rounded-full flex items-center justify-center text-blue-700 font-semibold">{{ current_user.first_name[0] if current_user.first_name else 'U' }}</div>
+                        <div class="hidden sm:block text-sm text-gray-700">{{ current_user.first_name }} {{ current_user.last_name }}</div>
+                    </div>
+                    {% else %}
+                    <a href="{{ url_for('main.login') }}" class="text-sm text-blue-600">Login</a>
+                    {% endif %}
+                </div>
+            </header>
+
             <!-- This is where the content from other pages will be injected -->
-            {% block content %}{% endblock %}
+            <div class="flex-1 p-6">
+                {% include '_flash.html' %}
+                {% block content %}{% endblock %}
+            </div>
         </main>
     </div>
+
+    <script>
+    // Simple sidebar toggle for small screens
+    document.addEventListener('DOMContentLoaded', function () {
+        var btn = document.getElementById('sidebarToggle');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+            var nav = document.querySelector('nav');
+            if (nav) nav.classList.toggle('hidden');
+        });
+    });
+    </script>
+    <!-- Reusable confirm modal -->
+    {% include '_confirm_modal.html' %}
+    <script src="{{ url_for('static', filename='js/ui.js') }}"></script>
 </body>
 </html>

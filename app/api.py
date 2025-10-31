@@ -1,7 +1,7 @@
 from flask import Blueprint, jsonify, request, abort
 from flask_login import current_user, login_required
 from .models import Account, Contact, Opportunity
-from . import db
+from . import db, limiter
 from .models import Token, User
 from flask import g
 import secrets
@@ -52,6 +52,7 @@ def paginate_query(query):
     return items, pagination
 
 @api.route('/accounts', methods=['GET'])
+@limiter.limit("30/minute")
 def list_accounts():
     q = request.args.get('q', '', type=str)
     base = Account.query
@@ -71,6 +72,7 @@ def list_accounts():
 
 @api.route('/token', methods=['POST'])
 @login_required
+@limiter.limit("5/hour")
 def create_token():
     """Create a new token for the currently logged-in user.
     This endpoint expects the user to be logged in via session (or run from the web UI).

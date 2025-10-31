@@ -62,6 +62,7 @@
                         id="role" name="role" required>
                     <option value="user" {% if user and user.role == 'user' %}selected{% endif %}>User</option>
                     <option value="admin" {% if user and user.role == 'admin' %}selected{% endif %}>Admin</option>
+                    <option value="owner" {% if user and user.role == 'owner' %}selected{% endif %}>Owner</option>
                 </select>
             </div>
             <div class="flex items-center justify-between">

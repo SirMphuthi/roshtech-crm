@@ -105,11 +105,31 @@ roshtech-crm/
 
 ## 🔒 Security
 
-- All passwords are hashed using industry-standard algorithms
-- CSRF protection enabled
-- Regular security audits
-- Rate limiting implemented
-- Input validation and sanitization
+1. **Rate Limiting**
+   - API endpoints are rate-limited to prevent abuse
+   - Default: 100 requests per hour per IP
+   - Token generation: 5 requests per hour
+   - Customizable via environment variables
+
+2. **Security Headers**
+   - HTTP Strict Transport Security (HSTS)
+   - Content Security Policy (CSP)
+   - X-Frame-Options
+   - X-Content-Type-Options
+   - X-XSS-Protection
+
+3. **Session Security**
+   - Secure session cookies
+   - HTTP-only cookies
+   - SameSite cookie policy
+   - Configurable session lifetime
+   - CSRF protection enabled by default
+
+4. **API Security**
+   - Token-based authentication
+   - Rate limiting per endpoint
+   - Input validation and sanitization
+   - Role-based access control
 
 ## 🤝 Contributing
 

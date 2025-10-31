@@ -51,9 +51,13 @@
                         {{ user.email }}
                     </td>
                     <td class="py-3 px-6 text-center">
-                        <span class="bg-blue-200 text-blue-600 py-1 px-3 rounded-full text-xs">
-                            {{ user.role }}
-                        </span>
+                        {% if user.role == 'owner' %}
+                        <span class="bg-yellow-100 text-yellow-800 py-1 px-3 rounded-full text-xs">OWNER</span>
+                        {% elif user.role == 'admin' %}
+                        <span class="bg-blue-200 text-blue-600 py-1 px-3 rounded-full text-xs">ADMIN</span>
+                        {% else %}
+                        <span class="bg-gray-100 text-gray-700 py-1 px-3 rounded-full text-xs">USER</span>
+                        {% endif %}
                     </td>
                     <td class="py-3 px-6 text-center">
                         <div class="flex item-center justify-center">
@@ -69,6 +73,7 @@
                                     </svg>
                                 </button>
                             </form>
+                            <button class="make-owner-btn text-sm bg-yellow-200 text-yellow-800 py-1 px-2 rounded ml-2" data-user-id="{{ user.id }}" {% if user.role == 'owner' %}disabled{% endif %}>Make Owner</button>
                         </div>
                     </td>
                 </tr>

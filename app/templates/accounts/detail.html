@@ -1,0 +1,48 @@
+{% extends "_layout.html" %}
+
+{% block content %}
+<div class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+        <div>
+            <h1 class="text-2xl font-bold">{{ account.name }}</h1>
+            <p class="text-sm text-gray-500">{{ account.industry or '—' }} &middot; {{ account.phone or '—' }} &middot; <a href="{{ account.website }}" class="text-blue-600">{{ account.website or '' }}</a></p>
+        </div>
+        <div class="space-x-2">
+            <a href="{{ url_for('main.account_edit', account_id=account.id) }}" class="px-3 py-2 bg-gray-200 rounded">Edit</a>
+            <form method="POST" action="{{ url_for('main.account_delete', account_id=account.id) }}" class="inline">
+                <button type="submit" data-confirm="Delete this account and all related records?" class="px-3 py-2 bg-red-500 text-white rounded">Delete</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 gap-6">
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-2">Contacts</h2>
+            <ul class="divide-y">
+                {% for c in contacts %}
+                    <li class="py-2">
+                        <a href="{{ url_for('main.contacts') }}" class="text-blue-600">{{ c.first_name }} {{ c.last_name }}</a>
+                        <div class="text-sm text-gray-500">{{ c.email or '' }} &middot; {{ c.phone_number or '' }}</div>
+                    </li>
+                {% else %}
+                    <li class="py-2 text-sm text-gray-500">No contacts yet</li>
+                {% endfor %}
+            </ul>
+        </div>
+
+        <div class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-2">Opportunities</h2>
+            <ul class="divide-y">
+                {% for o in opportunities %}
+                    <li class="py-2">
+                        <div class="font-medium">{{ o.name }}</div>
+                        <div class="text-sm text-gray-500">Stage: {{ o.stage }} &middot; Close: {{ o.close_date.strftime('%Y-%m-%d') if o.close_date else '—' }}</div>
+                    </li>
+                {% else %}
+                    <li class="py-2 text-sm text-gray-500">No opportunities</li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

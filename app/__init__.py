@@ -1,7 +1,9 @@
-from flask import Flask
+from flask import Flask, request
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from flask_login import LoginManager
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from .config import Config
 
 # Optional CSRF support (Flask-WTF). We import lazily so tests/dev without the
@@ -13,6 +15,7 @@ db = SQLAlchemy()
 migrate = Migrate()
 login_manager = LoginManager()
 login_manager.login_view = 'main.login'
+limiter = Limiter(key_func=get_remote_address)
 
 def create_app(test_config=None):
     app = Flask(__name__)
@@ -27,6 +30,25 @@ def create_app(test_config=None):
     db.init_app(app)
     migrate.init_app(app, db)
     login_manager.init_app(app)
+    limiter.init_app(app)
+    
+    # Security headers middleware
+    @app.after_request
+    def add_security_headers(response):
+        # HSTS
+        if app.config.get('STRICT_TRANSPORT_SECURITY'):
+            response.headers['Strict-Transport-Security'] = app.config['STRICT_TRANSPORT_SECURITY']
+            
+        # Content Security Policy
+        if app.config.get('CONTENT_SECURITY_POLICY'):
+            response.headers['Content-Security-Policy'] = app.config['CONTENT_SECURITY_POLICY']
+            
+        # Other security headers
+        response.headers['X-Content-Type-Options'] = app.config['X_CONTENT_TYPE_OPTIONS']
+        response.headers['X-Frame-Options'] = app.config['X_FRAME_OPTIONS']
+        response.headers['X-XSS-Protection'] = app.config['X_XSS_PROTECTION']
+        
+        return response
 
     # Try to enable CSRFProtect if Flask-WTF is available.
     try:
@@ -48,5 +70,24 @@ def create_app(test_config=None):
     app.register_blueprint(api_blueprint)
 
     from . import models
+
+    # Add CLI command to create/reset admin user
+    @app.cli.command('reset-admin')
+    def reset_admin():
+        """Create or reset the admin user with a default password."""
+        from app.models import User, db
+        email = 'admin@test.com'
+        password = 'password123'
+        with app.app_context():
+            user = User.query.filter_by(email=email).first()
+            if not user:
+                # Create the owner account so repository owner has full access
+                user = User(email=email, first_name='Test', last_name='Admin', role='owner')
+                user.set_password(password)
+                db.session.add(user)
+            else:
+                user.set_password(password)
+            db.session.commit()
+            print(f"Admin user reset: {email} / {password} (role=owner)")
 
     return app

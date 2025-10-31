@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (el.matches && (el.matches('.user-delete-btn') || el.closest('.user-delete-btn'))) {
       const btn = el.matches('.user-delete-btn') ? el : el.closest('.user-delete-btn')
       const userId = btn.getAttribute('data-user-id')
-      if (!confirm('Are you sure you want to delete this user?')) return
+  if (!(window.uiConfirm ? await window.uiConfirm('Please confirm', 'Are you sure you want to delete this user?') : confirm('Are you sure you want to delete this user?'))) return
       btn.disabled = true
       try {
         const csrf = document.querySelector('meta[name="csrf-token"]')?.content
@@ -47,6 +47,32 @@ document.addEventListener('DOMContentLoaded', function () {
       const userId = btn.getAttribute('data-user-id')
       openUserModal(userId)
     }
+
+    // Handle make-owner button
+    if (el.matches && el.matches('.make-owner-btn')) {
+      ev.preventDefault()
+      const btn = el
+      const userId = btn.getAttribute('data-user-id')
+      // ask for current user's password
+      const pwd = prompt('To confirm making this user an owner, enter your password:')
+      if (!pwd) return
+      try {
+        const form = new FormData()
+        form.append('role', 'owner')
+        form.append('confirm_password', pwd)
+        const resp = await fetch(`/users/${userId}/role`, {method: 'POST', body: form, headers: {'X-Requested-With': 'XMLHttpRequest'}})
+        if (!resp.ok) {
+          const text = await resp.text()
+          alert('Failed: ' + text)
+          return
+        }
+        // reload to show updated role badge
+        location.reload()
+      } catch (err) {
+        console.error(err)
+        alert('Failed to make owner')
+      }
+    }
   })
 })
 
@@ -80,6 +106,7 @@ async function openUserModal(userId) {
             <select id="m_role" name="role" class="border rounded w-full px-2 py-1">
               <option value="user">User</option>
               <option value="admin">Admin</option>
+              <option value="owner">Owner</option>
             </select>
           </div>
           <div class="text-right">
@@ -167,7 +194,7 @@ function updateUserRow(data) {
       found = true
     }
   })
-  if (!found) {
+    if (!found) {
     const tbody = document.querySelector('table tbody')
     if (!tbody) return
     const tr = document.createElement('tr')
@@ -180,7 +207,7 @@ function updateUserRow(data) {
         <div class="flex item-center justify-center">\
           <a href="#" class="user-edit-btn w-4 mr-4 transform hover:text-blue-500 hover:scale-110" data-user-id="${data.id}">Edit</a>\
           <form action="/users/${data.id}/delete" method="POST" class="inline">\
-            <button type="button" data-user-id="${data.id}" class="user-delete-btn w-4 transform hover:text-red-500 hover:scale-110" onclick="return false;">Delete</button>\
+            <button type="button" data-user-id="${data.id}" class="user-delete-btn w-4 transform hover:text-red-500 hover:scale-110" data-confirm="Are you sure you want to delete this user?">Delete</button>\
           </form>\
         </div>\
       </td>`
