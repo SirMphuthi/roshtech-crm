@@ -148,7 +148,9 @@ def user_create():
 @admin_required
 def user_edit(user_id):
     """Edit an existing user."""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     
     if request.method == 'POST':
         email = request.form.get('email')
@@ -184,7 +186,9 @@ def user_edit(user_id):
 @admin_required
 def user_delete(user_id):
     """Delete a user."""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     
     if user.id == current_user.id:
         flash('You cannot delete your own account', 'error')
@@ -203,7 +207,9 @@ def user_delete(user_id):
 @admin_required
 def user_json(user_id):
     """Return JSON details for a user (admin only)."""
-    u = User.query.get_or_404(user_id)
+    u = db.session.get(User, user_id)
+    if not u:
+        abort(404)
     return {
         'id': u.id,
         'email': u.email,
@@ -216,7 +222,9 @@ def user_json(user_id):
 @admin_required
 def user_reset_password(user_id):
     """Reset a user's password."""
-    user = User.query.get_or_404(user_id)
+    user = db.session.get(User, user_id)
+    if not user:
+        abort(404)
     new_password = request.form.get('new_password')
     
     user.set_password(new_password)
@@ -244,7 +252,9 @@ def tokens_create():
         flash('User is required', 'error')
         return redirect(url_for('main.tokens_list'))
         
-    user = User.query.get_or_404(int(user_id))
+    user = db.session.get(User, int(user_id))
+    if not user:
+        abort(404)
     value = secrets.token_urlsafe(48)
     token = Token(user_id=user.id)
     token.set_token(value)
@@ -278,7 +288,9 @@ def tokens_create():
 @admin_required
 def tokens_revoke(token_id):
     """Revoke a token."""
-    token = Token.query.get_or_404(token_id)
+    token = db.session.get(Token, token_id)
+    if not token:
+        abort(404)
     token.revoke()
     if request.headers.get('X-Requested-With') == 'XMLHttpRequest' or request.is_json:
         return {'success': True, 'id': token_id}
@@ -312,7 +324,7 @@ def opportunities():
 def opportunity_create():
     """Create a new opportunity."""
     if request.method == 'POST':
-        account = Account.query.get(request.form.get('account_id'))
+        account = db.session.get(Account, request.form.get('account_id'))
         if not account:
             flash('Invalid account selected', 'error')
             return redirect(url_for('main.opportunities'))
@@ -339,7 +351,9 @@ def opportunity_create():
 @login_required
 def opportunity_edit(opportunity_id):
     """Edit an existing opportunity."""
-    opportunity = Opportunity.query.get_or_404(opportunity_id)
+    opportunity = db.session.get(Opportunity, opportunity_id)
+    if not opportunity:
+        abort(404)
     
     # Only allow the owner or an admin to edit
     if opportunity.owner_id != current_user.id and current_user.role != 'admin':
@@ -347,7 +361,7 @@ def opportunity_edit(opportunity_id):
         return redirect(url_for('main.opportunities'))
     
     if request.method == 'POST':
-        account = Account.query.get(request.form.get('account_id'))
+        account = db.session.get(Account, request.form.get('account_id'))
         if not account:
             flash('Invalid account selected', 'error')
             return redirect(url_for('main.opportunities'))
@@ -369,7 +383,9 @@ def opportunity_edit(opportunity_id):
 @login_required
 def opportunity_delete(opportunity_id):
     """Delete an opportunity."""
-    opportunity = Opportunity.query.get_or_404(opportunity_id)
+    opportunity = db.session.get(Opportunity, opportunity_id)
+    if not opportunity:
+        abort(404)
     
     # Only allow the owner or an admin to delete
     if opportunity.owner_id != current_user.id and current_user.role != 'admin':
@@ -403,7 +419,7 @@ def contacts():
 def contact_create():
     """Create a new contact."""
     if request.method == 'POST':
-        account = Account.query.get(request.form.get('account_id'))
+        account = db.session.get(Account, request.form.get('account_id'))
         if not account:
             flash('Invalid account selected', 'error')
             return redirect(url_for('main.contacts'))
@@ -430,10 +446,12 @@ def contact_create():
 @login_required
 def contact_edit(contact_id):
     """Edit an existing contact."""
-    contact = Contact.query.get_or_404(contact_id)
+    contact = db.session.get(Contact, contact_id)
+    if not contact:
+        abort(404)
     
     if request.method == 'POST':
-        account = Account.query.get(request.form.get('account_id'))
+        account = db.session.get(Account, request.form.get('account_id'))
         if not account:
             flash('Invalid account selected', 'error')
             return redirect(url_for('main.contacts'))
@@ -456,7 +474,9 @@ def contact_edit(contact_id):
 @login_required
 def contact_delete(contact_id):
     """Delete a contact."""
-    contact = Contact.query.get_or_404(contact_id)
+    contact = db.session.get(Contact, contact_id)
+    if not contact:
+        abort(404)
     db.session.delete(contact)
     db.session.commit()
     flash('Contact deleted successfully', 'success')

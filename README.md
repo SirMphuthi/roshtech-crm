@@ -144,22 +144,12 @@ pytest tests/test_users.py::test_create_user -q
 - The app uses Flask + Flask-Login for auth. Tests create an `admin@test.com` user during setup.
 - If you need to switch the test client between users in tests, the test auth helper now logs out before logging in to ensure a clean session.
 - Database migrations are managed with Alembic/Flask-Migrate. Generate migrations with `flask db migrate` and apply with `flask db upgrade`.
-- There are a handful of deprecation warnings from SQLAlchemy about `Query.get()` — consider migrating to `Session.get()` in a follow-up.
+All legacy `Query.get()` and `Query.get_or_404()` usages have been migrated to `Session.get()` for SQLAlchemy 2.x compatibility.
 
-## � CSRF protection (recommended)
 
-This app supports optional CSRF protection via Flask-WTF. CSRF will be enabled at runtime if `flask-wtf` is installed and configured.
+## 🔒 CSRF protection
 
-To enable CSRF in your environment:
-
-PowerShell:
-```powershell
-pip install Flask-WTF
-$env:FLASK_APP = "run.py"
-flask run
-```
-
-If CSRF is enabled, the layout template will include a `meta[name="csrf-token"]` tag and the frontend JS will send this token in the `X-CSRFToken` header for AJAX POST requests.
+CSRF protection is now enabled by default via Flask-WTF. The layout template includes a `meta[name="csrf-token"]` tag and the frontend JS sends this token in the `X-CSRFToken` header for AJAX POST requests.
 
 Tests run with CSRF disabled by default via test config (see `tests/conftest.py`).
 

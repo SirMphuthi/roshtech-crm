@@ -1,4 +1,5 @@
 from app.models import User
+from app import db
 
 def test_user_list(client, auth):
     """Test that admin can view user list."""
@@ -39,15 +40,16 @@ def test_edit_user(client, auth, app):
     
     with app.app_context():
         user = User.query.filter_by(email='edit@test.com').first()
-        response = client.post(f'/users/{user.id}/edit', data={
-            'email': 'edited@test.com',
-            'first_name': 'Edited',
-            'last_name': 'User',
-            'role': 'user'
-        })
-        assert response.headers['Location'] == '/users'
-        
-        edited_user = User.query.get(user.id)
+        user_id = user.id
+    response = client.post(f'/users/{user_id}/edit', data={
+        'email': 'edited@test.com',
+        'first_name': 'Edited',
+        'last_name': 'User',
+        'role': 'user'
+    })
+    assert response.headers['Location'] == '/users'
+    with app.app_context():
+        edited_user = db.session.get(User, user_id)
         assert edited_user.email == 'edited@test.com'
         assert edited_user.first_name == 'Edited'
 
@@ -65,10 +67,11 @@ def test_delete_user(client, auth, app):
     
     with app.app_context():
         user = User.query.filter_by(email='delete@test.com').first()
-        response = client.post(f'/users/{user.id}/delete')
-        assert response.headers['Location'] == '/users'
-        
-        deleted_user = User.query.get(user.id)
+        user_id = user.id
+    response = client.post(f'/users/{user_id}/delete')
+    assert response.headers['Location'] == '/users'
+    with app.app_context():
+        deleted_user = db.session.get(User, user_id)
         assert deleted_user is None
 
 def test_non_admin_cannot_access_user_management(client, auth, app):
