@@ -1,0 +1,23 @@
+/* Global App Styles */
+
+.App {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+/* Global Page Title */
+h1.page-title {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 2rem;
+}
+
+/* Placeholder styles for basic pages */
+.placeholder-page {
+  padding: 2rem;
+  background-color: var(--color-bg-white);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px var(--color-shadow);
+}

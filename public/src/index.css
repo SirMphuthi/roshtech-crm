@@ -1,0 +1,55 @@
+/* ROOT STYLESHEET
+  This is where we define the entire color palette based on your logo and theme.
+*/
+
+:root {
+  /* Theme Colors (from your light blue image) */
+  --color-theme-lightest: #F4F8FA; /* Page background */
+  --color-theme-light: #EAF6FF;
+  --color-theme-base: #B0DEEA;
+  --color-theme-dark: #89CFF0;
+
+  /* Logo Colors (from your logo) */
+  --color-logo-primary: #00BFFF; /* Deep Sky Blue */
+  --color-logo-secondary: #007BFF; /* Bright Blue */
+
+  /* Sidebar Colors (Professional Dark) */
+  --color-sidebar-bg: #1A2B4D; /* Dark Navy */
+  --color-sidebar-bg-hover: #2C3E50; /* Charcoal */
+  --color-sidebar-text: #EAEAEA;
+  --color-sidebar-text-active: #FFFFFF;
+  --color-sidebar-icon: #a0aec0;
+  --color-sidebar-icon-active: #FFFFFF;
+  --color-sidebar-active-marker: var(--color-logo-primary);
+
+  /* Text Colors */
+  --color-text-primary: #2d3748; /* Dark gray */
+  --color-text-secondary: #718096; /* Medium gray */
+  --color-text-light: #FFFFFF;
+
+  /* Component Colors */
+  --color-bg-white: #FFFFFF;
+  --color-border: #E2E8F0;
+  --color-shadow: rgba(0, 0, 0, 0.05);
+  --color-success: #48BB78;
+  --color-warning: #ED8936;
+  --color-danger: #F56565;
+}
+
+/* Basic reset */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-theme-lightest);
+  color: var(--color-text-primary);
+}

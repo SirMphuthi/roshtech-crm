@@ -16,8 +16,12 @@ from flask import Response
 from .models import User, Account, Contact, Opportunity
 from .models import Token
 
-# A Blueprint is a way to organize a group of related routes.
 main = Blueprint('main', __name__)
+@main.route('/calendar')
+@login_required
+def calendar():
+    """CRM Calendar page."""
+    return render_template('calendar.html', title='Calendar')
 
 def admin_required(f):
     """Decorator to require admin role for a route."""
@@ -181,11 +185,8 @@ def logout():
     return redirect(url_for('main.login'))
 
 @main.route('/')
-def index():
-    """Redirect root URL to dashboard if logged in, or login page if not."""
-    if current_user.is_authenticated:
-        return redirect(url_for('main.dashboard'))
-    return redirect(url_for('main.login'))
+def home():
+    return render_template('index.html')
 
 @main.route('/dashboard')
 @login_required

@@ -1,0 +1,144 @@
+.sidebar {
+  width: 260px;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  left: 0;
+  background-color: var(--color-sidebar-bg);
+  color: var(--color-sidebar-text);
+  display: flex;
+  flex-direction: column;
+  transition: width 0.3s ease-in-out;
+  overflow-y: auto;
+  z-index: 1000;
+}
+
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  padding: 1.25rem 1.5rem;
+  height: 70px; /* Same as header */
+  border-bottom: 1px solid var(--color-sidebar-bg-hover);
+}
+
+.sidebar-logo {
+  height: 40px;
+  width: auto;
+  transition: opacity 0.3s, width 0.3s;
+}
+
+.sidebar-logo-text {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text-light);
+  margin-left: 0.75rem;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+  white-space: nowrap;
+}
+
+.sidebar-toggle {
+  display: none; /* Hide on desktop for now, can be used for mobile */
+  background: none;
+  border: none;
+  color: var(--color-sidebar-icon);
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.5rem;
+  position: absolute;
+  right: -15px;
+  top: 80px;
+  background-color: var(--color-sidebar-bg);
+  border-radius: 50%;
+  border: 1px solid var(--color-sidebar-bg-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-menu {
+  list-style: none;
+  padding: 1rem 0;
+  flex-grow: 1;
+}
+
+.sidebar-menu-item {
+  padding: 0 1rem;
+}
+
+.sidebar-menu-link {
+  display: flex;
+  align-items: center;
+  padding: 0.875rem 1rem;
+  color: var(--color-sidebar-text);
+  text-decoration: none;
+  border-radius: 8px;
+  transition: background-color 0.2s, color 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-menu-link:hover {
+  background-color: var(--color-sidebar-bg-hover);
+  color: var(--color-sidebar-text-active);
+}
+
+.sidebar-menu-link.active {
+  background-color: var(--color-logo-secondary);
+  color: var(--color-sidebar-text-active);
+  font-weight: 500;
+  box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+.sidebar-menu-link.active .sidebar-icon {
+  color: var(--color-sidebar-icon-active);
+}
+
+.sidebar-icon {
+  font-size: 1.25rem;
+  margin-right: 1rem;
+  color: var(--color-sidebar-icon);
+  transition: color 0.2s;
+  flex-shrink: 0;
+}
+
+.sidebar-text {
+  font-size: 0.95rem;
+  opacity: 1;
+  transition: opacity 0.3s ease-in-out;
+}
+
+/* Collapsed State */
+.sidebar.collapsed {
+  width: 80px;
+}
+
+.sidebar.collapsed .sidebar-logo {
+  /* You should create a small, icon-only version of your logo */
+  /* For now, we just shrink it */
+  height: 30px;
+}
+
+.sidebar.collapsed .sidebar-logo-text {
+  opacity: 0;
+  width: 0;
+  margin-left: 0;
+}
+
+.sidebar.collapsed .sidebar-text {
+  opacity: 0;
+  width: 0;
+}
+
+.sidebar.collapsed .sidebar-menu-link {
+  justify-content: center;
+}
+
+.sidebar.collapsed .sidebar-icon {
+  margin-right: 0;
+  font-size: 1.5rem;
+}
+
+.sidebar.collapsed .sidebar-toggle {
+  right: -20px;
+}
