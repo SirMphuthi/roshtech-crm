@@ -17,8 +17,8 @@ login_manager.login_view = 'main.login'
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
-    # Enable CORS for all routes, allow credentials
-    CORS(app, supports_credentials=True)
+    # Enable CORS for all routes, allow credentials, allow React frontend
+    CORS(app, resources={r"/api/*": {"origins": ["http://localhost:3000"]}}, supports_credentials=True)
     # Load the default configuration
     app.config.from_object(Config)
     # Override with test config if provided

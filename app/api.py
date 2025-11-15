@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request, abort, make_response
 from flask_login import current_user, login_required, login_user, logout_user
+from flask import Response
 from .models import Account, Contact, Opportunity, User, Token
 from . import db
 from flask import g
@@ -43,6 +44,7 @@ def login():
         'last_name': user.last_name,
         'role': user.role
     })
+
 # Global error handlers for JSON responses
 @api.app_errorhandler(404)
 def not_found_error(error):
@@ -52,15 +54,32 @@ def not_found_error(error):
 def internal_error(error):
     return jsonify({'error': 'Internal server error'}), 500
 
+# Return JSON 401 for API endpoints if not authenticated
+@api.app_errorhandler(401)
+def unauthorized_error(error):
+    return jsonify({'error': 'Unauthorized'}), 401
+
+# Patch login_required to return JSON for API endpoints
+def api_login_required(func):
+    from functools import wraps
+    @wraps(func)
+    def decorated_view(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return jsonify({'error': 'Unauthorized'}), 401
+        return func(*args, **kwargs)
+    return decorated_view
+
+# Replace all @login_required with @api_login_required in this file
+
 @api.route('/auth/logout', methods=['POST'])
-@login_required
+@api_login_required
 def logout():
     """Logout the current user."""
     logout_user()
     return jsonify({'message': 'Logged out successfully'}), 200
 
 @api.route('/auth/me', methods=['GET'])
-@login_required
+@api_login_required
 def get_current_user():
     """Get current logged-in user info."""
     user = current_user
@@ -78,7 +97,7 @@ def get_current_user():
 
 
 @api.route('/dashboard/stats', methods=['GET'])
-@login_required
+@api_login_required
 def dashboard_stats():
     """Get dashboard statistics."""
     accounts_count = Account.query.count()
@@ -98,7 +117,7 @@ def dashboard_stats():
 # ===========================
 
 @api.route('/accounts', methods=['GET'])
-@login_required
+@api_login_required
 def list_accounts():
     """List all accounts with pagination and search."""
     q = request.args.get('q', '', type=str)
@@ -130,7 +149,7 @@ def list_accounts():
     }), 200
 
 @api.route('/accounts', methods=['POST'])
-@login_required
+@api_login_required
 def create_account():
     """Create a new account."""
     data = request.get_json() or {}
@@ -161,7 +180,7 @@ def create_account():
     }), 201
 
 @api.route('/accounts/<int:account_id>', methods=['GET'])
-@login_required
+@api_login_required
 def get_account(account_id):
     """Get a single account."""
     account = Account.query.get_or_404(account_id)
@@ -176,7 +195,7 @@ def get_account(account_id):
     }), 200
 
 @api.route('/accounts/<int:account_id>', methods=['PUT'])
-@login_required
+@api_login_required
 def update_account(account_id):
     """Update an account."""
     account = Account.query.get_or_404(account_id)
@@ -197,7 +216,7 @@ def update_account(account_id):
     return jsonify({'message': 'Account updated'}), 200
 
 @api.route('/accounts/<int:account_id>', methods=['DELETE'])
-@login_required
+@api_login_required
 def delete_account(account_id):
     """Delete an account."""
     account = Account.query.get_or_404(account_id)
@@ -213,7 +232,7 @@ def delete_account(account_id):
 # ===========================
 
 @api.route('/contacts', methods=['GET'])
-@login_required
+@api_login_required
 def list_contacts():
     """List all contacts with pagination and search."""
     q = request.args.get('q', '', type=str)
@@ -252,7 +271,7 @@ def list_contacts():
     }), 200
 
 @api.route('/contacts', methods=['POST'])
-@login_required
+@api_login_required
 def create_contact():
     """Create a new contact."""
     data = request.get_json() or {}
@@ -286,7 +305,7 @@ def create_contact():
     }), 201
 
 @api.route('/contacts/<int:contact_id>', methods=['GET'])
-@login_required
+@api_login_required
 def get_contact(contact_id):
     """Get a single contact."""
     contact = Contact.query.get_or_404(contact_id)
@@ -301,7 +320,7 @@ def get_contact(contact_id):
     }), 200
 
 @api.route('/contacts/<int:contact_id>', methods=['PUT'])
-@login_required
+@api_login_required
 def update_contact(contact_id):
     """Update a contact."""
     contact = Contact.query.get_or_404(contact_id)
@@ -322,7 +341,7 @@ def update_contact(contact_id):
     return jsonify({'message': 'Contact updated'}), 200
 
 @api.route('/contacts/<int:contact_id>', methods=['DELETE'])
-@login_required
+@api_login_required
 def delete_contact(contact_id):
     """Delete a contact."""
     contact = Contact.query.get_or_404(contact_id)
@@ -335,7 +354,7 @@ def delete_contact(contact_id):
 # ===========================
 
 @api.route('/opportunities', methods=['GET'])
-@login_required
+@api_login_required
 def list_opportunities():
     """List all opportunities with pagination and search."""
     q = request.args.get('q', '', type=str)
@@ -378,7 +397,7 @@ def list_opportunities():
     }), 200
 
 @api.route('/opportunities', methods=['POST'])
-@login_required
+@api_login_required
 def create_opportunity():
     """Create a new opportunity."""
     data = request.get_json() or {}
@@ -410,7 +429,7 @@ def create_opportunity():
     }), 201
 
 @api.route('/opportunities/<int:opportunity_id>', methods=['GET'])
-@login_required
+@api_login_required
 def get_opportunity(opportunity_id):
     """Get a single opportunity."""
     opportunity = Opportunity.query.get_or_404(opportunity_id)
@@ -431,7 +450,7 @@ def get_opportunity(opportunity_id):
     }), 200
 
 @api.route('/opportunities/<int:opportunity_id>', methods=['PUT'])
-@login_required
+@api_login_required
 def update_opportunity(opportunity_id):
     """Update an opportunity."""
     opportunity = Opportunity.query.get_or_404(opportunity_id)
@@ -455,7 +474,7 @@ def update_opportunity(opportunity_id):
     return jsonify({'message': 'Opportunity updated'}), 200
 
 @api.route('/opportunities/<int:opportunity_id>', methods=['DELETE'])
-@login_required
+@api_login_required
 def delete_opportunity(opportunity_id):
     """Delete an opportunity."""
     opportunity = Opportunity.query.get_or_404(opportunity_id)
@@ -473,31 +492,31 @@ def delete_opportunity(opportunity_id):
 # ===========================
 
 @api.route('/leads', methods=['GET'])
-@login_required
+@api_login_required
 def list_leads():
     """List all leads (using Opportunities model as Leads)."""
     return list_opportunities()
 
 @api.route('/leads', methods=['POST'])
-@login_required
+@api_login_required
 def create_lead():
     """Create a new lead."""
     return create_opportunity()
 
 @api.route('/leads/<int:lead_id>', methods=['GET'])
-@login_required
+@api_login_required
 def get_lead(lead_id):
     """Get a single lead."""
     return get_opportunity(lead_id)
 
 @api.route('/leads/<int:lead_id>', methods=['PUT'])
-@login_required
+@api_login_required
 def update_lead(lead_id):
     """Update a lead."""
     return update_opportunity(lead_id)
 
 @api.route('/leads/<int:lead_id>', methods=['DELETE'])
-@login_required
+@api_login_required
 def delete_lead(lead_id):
     """Delete a lead."""
     return delete_opportunity(lead_id)
@@ -507,7 +526,7 @@ def delete_lead(lead_id):
 # ===========================
 
 @api.route('/tasks', methods=['GET'])
-@login_required
+@api_login_required
 def list_tasks():
     """List all tasks."""
     return jsonify({
@@ -519,7 +538,7 @@ def list_tasks():
     }), 200
 
 @api.route('/tasks', methods=['POST'])
-@login_required
+@api_login_required
 def create_task():
     """Create a new task."""
     return jsonify({'error': 'Tasks module not yet implemented'}), 501
@@ -529,7 +548,7 @@ def create_task():
 # ===========================
 
 @api.route('/reports', methods=['GET'])
-@login_required
+@api_login_required
 def list_reports():
     """List available reports."""
     return jsonify({

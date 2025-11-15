@@ -27,19 +27,44 @@ RoshTech CRM is a comprehensive, full-stack Customer Relationship Management pla
 ## 🛠️ Technology Stack
 
 ### Backend
-- **Framework:** Python 3 + Flask
-- **Database:** SQLAlchemy with SQLite (Development) / PostgreSQL (Production)
-- **Authentication:** Flask-Login
-- **API Documentation:** Swagger/OpenAPI
 
-### Frontend
-- **Framework:** React (create-react-app)
-- **Routing:** react-router-dom
+#### Backend Dependencies (see `requirements.txt`)
+```
+Flask
+Flask-SQLAlchemy
+Flask-Migrate
+Flask-Login
+Flask-CORS
+Flask-WTF
+python-dotenv
+Werkzeug
+pytest
+pytest-cov
+```
+
 - **Icons:** react-icons
-- **Custom Components:** Dashboard, Login, Layout, Sidebar, etc.
+**Framework:** React (create-react-app)
+**Routing:** react-router-dom
+**Icons:** react-icons
+**Drag & Drop:** react-beautiful-dnd
+**Charts:** recharts
+**CSV Export:** react-csv
+**Calendar:** react-big-calendar, date-fns
+**Custom Components:** Dashboard, Login, Layout, Sidebar, Contacts, Leads, Opportunities, Tasks, Calendar, Reports, User Management, Settings, etc.
 
-## 🚀 Getting Started
-
+#### Frontend Dependencies (see `public/package.json`)
+```
+react
+react-dom
+react-router-dom
+react-icons
+react-scripts
+react-beautiful-dnd
+recharts
+react-csv
+react-big-calendar
+date-fns
+```
 ### Prerequisites
 - Python 3.8 or higher
 - pip (Python package manager)
@@ -54,11 +79,28 @@ RoshTech CRM is a comprehensive, full-stack Customer Relationship Management pla
    cd roshtech-crm
    ```
 
-2. **Set Up Virtual Environment**
+2. **Set Up Python Backend**
    ```bash
-   # Windows
    python -m venv venv
    .\venv\Scripts\activate
+   pip install -r requirements.txt
+   python run.py
+   ```
+
+3. **Set Up React Frontend**
+   ```bash
+   cd public
+   npm install
+   npm start
+   ```
+
+4. **Environment Variables**
+   - Copy `.env.example` to `.env` and configure as needed.
+
+5. **Database Migrations**
+   ```bash
+   flask db upgrade
+   ```
 
    # macOS/Linux
    python3 -m venv venv
